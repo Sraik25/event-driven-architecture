@@ -42,7 +42,7 @@ func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) er
 
 	// authorizeCustomer
 	if err = h.customers.Authorize(ctx, order.CustomerID); err != nil {
-		return errors.Wrap(err, "order customer authorization")
+		return errors.Wrap(err, "order customers authorization")
 	}
 
 	// validatePayment

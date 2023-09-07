@@ -1,4 +1,4 @@
-package internal
+package baskets
 
 import (
 	"context"
@@ -31,13 +31,13 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 	app = logging.LogApplicationAccess(app, mono.Logger())
 
 	// setup Driver adapters
-	if err := grpc.RegisterServer(app, mono.RPC()); err != nil {
+	if err = grpc.RegisterServer(app, mono.RPC()); err != nil {
 		return err
 	}
-	if err := rest.RegisterGateway(ctx, mono.Mux(), mono.Config().Rpc.Address()); err != nil {
+	if err = rest.RegisterGateway(ctx, mono.Mux(), mono.Config().Rpc.Address()); err != nil {
 		return err
 	}
-	if err := rest.RegisterSwagger(mono.Mux()); err != nil {
+	if err = rest.RegisterSwagger(mono.Mux()); err != nil {
 		return err
 	}
 

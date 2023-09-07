@@ -12,7 +12,7 @@ var (
 	ErrQuantityCannotBeNegative = errors.Wrap(errors.ErrBadRequest, "the item quantity cannot be negative")
 	ErrBasketIDCannotBeBlank    = errors.Wrap(errors.ErrBadRequest, "the basket id cannot be blank")
 	ErrPaymentIDCannotBeBlank   = errors.Wrap(errors.ErrBadRequest, "the payment id cannot be blank")
-	ErrCustomerIDCannotBeBlank  = errors.Wrap(errors.ErrBadRequest, "the customer id cannot be blank")
+	ErrCustomerIDCannotBeBlank  = errors.Wrap(errors.ErrBadRequest, "the customers id cannot be blank")
 )
 
 type BasketStatus string

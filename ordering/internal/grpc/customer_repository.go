@@ -4,6 +4,7 @@ import (
 	"context"
 	"google.golang.org/grpc"
 
+	"github.com/Sraik25/event-driven-architecture/customers/customerspb"
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/domain"
 )
 
