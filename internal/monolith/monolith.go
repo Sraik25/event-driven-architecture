@@ -22,5 +22,5 @@ type Monolith interface {
 }
 
 type Module interface {
-	Startup(ctx context.Context, monolith Monolith) error
+	Startup(ctx context.Context, mono Monolith) error
 }
