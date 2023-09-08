@@ -12,6 +12,6 @@ func ParentContext(ctx context.Context) WaiterOption {
 
 func CatchSignal() WaiterOption {
 	return func(c *waiterCfg) {
-		c.catchSignal = true
+		c.catchSignals = true
 	}
 }
