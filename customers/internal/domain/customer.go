@@ -1,6 +1,9 @@
 package domain
 
-import "github.com/stackus/errors"
+import (
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
+	"github.com/stackus/errors"
+)
 
 var (
 	ErrNameCannotBeBlank       = errors.Wrap(errors.ErrBadRequest, "the customer name cannot be blank")
@@ -8,9 +11,11 @@ var (
 	ErrSmsNumberCannotBeBlank  = errors.Wrap(errors.ErrBadRequest, "the SMS number cannot be blank")
 	ErrCustomerAlreadyEnabled  = errors.Wrap(errors.ErrBadRequest, "the customer is already enabled")
 	ErrCustomerAlreadyDisabled = errors.Wrap(errors.ErrBadRequest, "the customer is already disabled")
+	ErrCustomerNotAuthorized   = errors.Wrap(errors.ErrUnauthorized, "customer is not authorized")
 )
 
 type Customer struct {
+	ddd.AggregateBase
 	ID        string
 	Name      string
 	SmsNumber string
@@ -36,6 +41,18 @@ func RegisterCustomer(id, name, smsNumber string) (*Customer, error) {
 		SmsNumber: smsNumber,
 		Enabled:   true,
 	}, nil
+}
+
+func (c *Customer) Authorize() error {
+	if !c.Enabled {
+		return ErrCustomerNotAuthorized
+	}
+
+	c.AddEvent(&CustomerAuthorized{
+		Customer: c,
+	})
+
+	return nil
 }
 
 func (c *Customer) Enable() error {
