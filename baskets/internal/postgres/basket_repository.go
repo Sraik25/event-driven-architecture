@@ -89,12 +89,12 @@ func (r BasketRepository) table(query string) string {
 
 func (r BasketRepository) statusToDomain(status string) (domain.BasketStatus, error) {
 	switch status {
-	case domain.BasketOpen.String():
-		return domain.BasketOpen, nil
-	case domain.BasketCancelled.String():
-		return domain.BasketCancelled, nil
-	case domain.BasketCheckedOut.String():
-		return domain.BasketCheckedOut, nil
+	case domain.BasketIsOpen.String():
+		return domain.BasketIsOpen, nil
+	case domain.BasketIsCanceled.String():
+		return domain.BasketIsCanceled, nil
+	case domain.BasketIsCheckedOut.String():
+		return domain.BasketIsCheckedOut, nil
 	default:
 		return domain.BasketUnknown, fmt.Errorf("unknown basket status: %s", status)
 	}

@@ -23,6 +23,12 @@ var _ interface {
 	EventPublisher
 } = (*EventDispatcher)(nil)
 
+func NewEventDispatcher() *EventDispatcher {
+	return &EventDispatcher{
+		handlers: make(map[string][]EventHandler),
+	}
+}
+
 func (h *EventDispatcher) Subscribe(event Event, handler EventHandler) {
 	h.mu.Lock()
 	defer h.mu.Unlock()

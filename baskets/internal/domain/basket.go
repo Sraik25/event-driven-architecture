@@ -15,24 +15,6 @@ var (
 	ErrCustomerIDCannotBeBlank  = errors.Wrap(errors.ErrBadRequest, "the customers id cannot be blank")
 )
 
-type BasketStatus string
-
-const (
-	BasketUnknown    BasketStatus = ""
-	BasketOpen       BasketStatus = "open"
-	BasketCancelled  BasketStatus = "cancelled"
-	BasketCheckedOut BasketStatus = "checked_out"
-)
-
-func (s BasketStatus) String() string {
-	switch s {
-	case BasketOpen, BasketCancelled, BasketCheckedOut:
-		return string(s)
-	default:
-		return ""
-	}
-}
-
 type Basket struct {
 	ID         string
 	CustomerID string
@@ -53,17 +35,17 @@ func StartBasket(id string, customerID string) (*Basket, error) {
 	return &Basket{
 		ID:         id,
 		CustomerID: customerID,
-		Status:     BasketOpen,
+		Status:     BasketIsOpen,
 		Items:      []Item{},
 	}, nil
 }
 
 func (b *Basket) IsCancellable() bool {
-	return b.Status == BasketOpen
+	return b.Status == BasketIsOpen
 }
 
 func (b *Basket) IsOpen() bool {
-	return b.Status == BasketOpen
+	return b.Status == BasketIsOpen
 }
 
 func (b *Basket) Cancel() error {
@@ -71,7 +53,7 @@ func (b *Basket) Cancel() error {
 		return ErrBasketCannotBeCancelled
 	}
 
-	b.Status = BasketCancelled
+	b.Status = BasketIsCanceled
 	b.Items = []Item{}
 
 	return nil
@@ -91,7 +73,7 @@ func (b *Basket) Checkout(paymentID string) error {
 	}
 
 	b.PaymentID = paymentID
-	b.Status = BasketCheckedOut
+	b.Status = BasketIsCheckedOut
 
 	return nil
 }
