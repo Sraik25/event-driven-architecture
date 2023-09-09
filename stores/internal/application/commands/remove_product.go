@@ -24,5 +24,5 @@ func NewRemoveProductHandler(stores domain.StoreRepository, products domain.Prod
 }
 
 func (h RemoveProductHandler) RemoveProduct(ctx context.Context, cmd RemoveProduct) error {
-	return h.products.RemoveProduct(ctx, cmd.ID)
+	return h.products.Delete(ctx, cmd.ID)
 }

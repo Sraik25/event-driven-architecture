@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 	"github.com/Sraik25/event-driven-architecture/stores/internal/domain"
 )
 
@@ -11,12 +12,16 @@ type (
 	}
 
 	DisableParticipationHandler struct {
-		stores domain.StoreRepository
+		stores          domain.StoreRepository
+		domainPublisher ddd.EventPublisher
 	}
 )
 
-func NewDisableParticipationHandler(stores domain.StoreRepository) DisableParticipationHandler {
-	return DisableParticipationHandler{stores: stores}
+func NewDisableParticipationHandler(stores domain.StoreRepository, domainPublisher ddd.EventPublisher) DisableParticipationHandler {
+	return DisableParticipationHandler{
+		stores:          stores,
+		domainPublisher: domainPublisher,
+	}
 }
 
 func (h DisableParticipationHandler) DisableParticipation(ctx context.Context, cmd DisableParticipation) error {
@@ -25,10 +30,18 @@ func (h DisableParticipationHandler) DisableParticipation(ctx context.Context, c
 		return err
 	}
 
-	err = store.DisableParticipation()
-	if err != nil {
+	if err = store.DisableParticipation(); err != nil {
 		return err
 	}
 
-	return h.stores.Update(ctx, store)
+	if err = h.stores.Update(ctx, store); err != nil {
+		return err
+	}
+
+	// publish domain events
+	if err = h.domainPublisher.Publish(ctx, store.GetEvents()...); err != nil {
+		return err
+	}
+
+	return nil
 }

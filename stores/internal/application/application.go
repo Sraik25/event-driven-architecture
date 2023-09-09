@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 	"github.com/Sraik25/event-driven-architecture/stores/internal/application/commands"
 	"github.com/Sraik25/event-driven-architecture/stores/internal/application/queries"
 	"github.com/Sraik25/event-driven-architecture/stores/internal/domain"
@@ -51,13 +52,14 @@ type (
 
 var _ App = (*Application)(nil)
 
-func New(stores domain.StoreRepository, participatingStores domain.ParticipatingStoreRepository, products domain.ProductRepository) *Application {
+func New(stores domain.StoreRepository, participatingStores domain.ParticipatingStoreRepository,
+	products domain.ProductRepository, domainPublisher ddd.EventPublisher) *Application {
 	return &Application{
 		appCommands: appCommands{
-			CreateStoreHandler:          commands.NewCreateStoreHandler(stores),
-			EnableParticipationHandler:  commands.NewEnableParticipationHandler(stores),
-			DisableParticipationHandler: commands.NewDisableParticipationHandler(stores),
-			AddProductHandler:           commands.NewAddProductHandler(stores, products),
+			CreateStoreHandler:          commands.NewCreateStoreHandler(stores, domainPublisher),
+			EnableParticipationHandler:  commands.NewEnableParticipationHandler(stores, domainPublisher),
+			DisableParticipationHandler: commands.NewDisableParticipationHandler(stores, domainPublisher),
+			AddProductHandler:           commands.NewAddProductHandler(stores, products, domainPublisher),
 			RemoveProductHandler:        commands.NewRemoveProductHandler(stores, products),
 		},
 		appQueries: appQueries{
