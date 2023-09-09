@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 	"github.com/stackus/errors"
 
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/domain"
@@ -15,22 +16,21 @@ type CreateOrder struct {
 }
 
 type CreateOrderHandler struct {
-	orders        domain.OrderRepository
-	customers     domain.CustomerRepository
-	payments      domain.PaymentRepository
-	shopping      domain.ShoppingRepository
-	notifications domain.NotificationRepository
+	orders          domain.OrderRepository
+	customers       domain.CustomerRepository
+	payments        domain.PaymentRepository
+	shopping        domain.ShoppingRepository
+	domainPublisher ddd.EventPublisher
 }
 
 func NewCreateOrderHandler(orders domain.OrderRepository, customers domain.CustomerRepository,
-	payments domain.PaymentRepository, shopping domain.ShoppingRepository,
-	notifications domain.NotificationRepository) CreateOrderHandler {
+	payments domain.PaymentRepository, shopping domain.ShoppingRepository, domainPublisher ddd.EventPublisher) CreateOrderHandler {
 	return CreateOrderHandler{
-		orders:        orders,
-		customers:     customers,
-		payments:      payments,
-		shopping:      shopping,
-		notifications: notifications,
+		orders:          orders,
+		customers:       customers,
+		payments:        payments,
+		shopping:        shopping,
+		domainPublisher: domainPublisher,
 	}
 }
 
@@ -55,10 +55,14 @@ func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) er
 		return errors.Wrap(err, "order shopping scheduling")
 	}
 
-	// notifyOrderCreated
-	if err = h.notifications.NotifyOrderCreated(ctx, order.ID, order.CustomerID); err != nil {
+	if err = h.orders.Save(ctx, order); err != nil {
+		errors.Wrap(err, "Create order command")
+	}
+
+	// publish domain events
+	if err = h.domainPublisher.Publish(ctx, order.GetEvents()...); err != nil {
 		return err
 	}
 
-	return errors.Wrap(h.orders.Save(ctx, order), "Create order command")
+	return nil
 }

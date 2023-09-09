@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/application/commands"
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/application/queries"
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/domain"
@@ -40,15 +41,13 @@ type (
 var _ App = (*Application)(nil)
 
 func New(orders domain.OrderRepository, customers domain.CustomerRepository, payments domain.PaymentRepository,
-	invoices domain.InvoiceRepository, shopping domain.ShoppingRepository,
-	notifications domain.NotificationRepository,
-) *Application {
+	shopping domain.ShoppingRepository, domainPublisher ddd.EventPublisher) *Application {
 	return &Application{
 		appCommands: appCommands{
-			CreateOrderHandler:   commands.NewCreateOrderHandler(orders, customers, payments, shopping, notifications),
-			CancelOrderHandler:   commands.NewCancelOrderHandler(orders, shopping, notifications),
-			ReadyOrderHandler:    commands.NewReadyOrderHandler(orders, invoices, notifications),
-			CompleteOrderHandler: commands.NewCompleteOrderHandler(orders),
+			CreateOrderHandler:   commands.NewCreateOrderHandler(orders, customers, payments, shopping, domainPublisher),
+			CancelOrderHandler:   commands.NewCancelOrderHandler(orders, shopping, domainPublisher),
+			ReadyOrderHandler:    commands.NewReadyOrderHandler(orders, domainPublisher),
+			CompleteOrderHandler: commands.NewCompleteOrderHandler(orders, domainPublisher),
 		},
 		appQueries: appQueries{
 			GetOrderHandler: queries.NewGetOrderHandler(orders),

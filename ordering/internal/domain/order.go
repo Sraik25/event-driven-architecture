@@ -1,6 +1,9 @@
 package domain
 
-import "github.com/stackus/errors"
+import (
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
+	"github.com/stackus/errors"
+)
 
 var (
 	ErrOrderHasNoItems         = errors.Wrap(errors.ErrBadRequest, "the order has no items")
@@ -10,7 +13,7 @@ var (
 )
 
 type Order struct {
-	ID         string
+	ddd.AggregateBase
 	CustomerID string
 	PaymentID  string
 	InvoiceID  string
@@ -19,7 +22,7 @@ type Order struct {
 	Status     OrderStatus
 }
 
-func CreateOrder(ID, customerID, paymentID string, items []*Item) (*Order, error) {
+func CreateOrder(id, customerID, paymentID string, items []*Item) (*Order, error) {
 	if len(items) == 0 {
 		return nil, ErrOrderHasNoItems
 	}
@@ -32,27 +35,45 @@ func CreateOrder(ID, customerID, paymentID string, items []*Item) (*Order, error
 		return nil, ErrPaymentIDCannotBeBlank
 	}
 
-	return &Order{
-		ID:         ID,
+	order := &Order{
+		AggregateBase: ddd.AggregateBase{
+			ID: id,
+		},
 		CustomerID: customerID,
 		PaymentID:  paymentID,
 		Items:      items,
-		Status:     OrderPending,
-	}, nil
+		Status:     OrderIsPending,
+	}
+
+	order.AddEvent(&OrderCreated{
+		Order: order,
+	})
+
+	return order, nil
 }
 
 func (o *Order) Cancel() error {
-	if o.Status != OrderPending {
+	if o.Status != OrderIsPending {
 		return ErrOrderCannotBeCancelled
 	}
 
-	o.Status = OrderCancelled
+	o.Status = OrderIsCancelled
+
+	o.AddEvent(&OrderCanceled{
+		Order: o,
+	})
+
 	return nil
 }
 
 func (o *Order) Ready() error {
 	// TODO validate status
-	o.Status = OrderReady
+	o.Status = OrderIsReady
+
+	o.AddEvent(&OrderReadied{
+		Order: o,
+	})
+
 	return nil
 }
 
@@ -61,7 +82,12 @@ func (o *Order) Complete(invoiceID string) error {
 
 	// TODO validate status
 	o.InvoiceID = invoiceID
-	o.Status = OrderCompleted
+	o.Status = OrderIsCompleted
+
+	o.AddEvent(&OrderCompleted{
+		Order: o,
+	})
+
 	return nil
 }
 
