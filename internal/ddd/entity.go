@@ -18,8 +18,8 @@ type (
 var _ interface {
 	IDer
 	EntityNamer
-	//IDSetter
-	//NameSetter
+	IDSetter
+	NameSetter
 } = (*Entity)(nil)
 
 func NewEntity(id, name string) Entity {

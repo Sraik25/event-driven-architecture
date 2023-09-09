@@ -25,7 +25,7 @@ func (r StoreRepository) Find(ctx context.Context, storeID string) (*domain.Stor
 	const query = "SELECT name, location, participating FROM %s WHERE id = $1 LIMIT 1"
 
 	store := &domain.Store{
-		AggregateBase: ddd.AggregateBase{
+		Aggregate: ddd.AggregateBase{
 			ID: storeID,
 		},
 	}

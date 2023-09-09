@@ -13,7 +13,7 @@ type (
 	EventHandlerFunc[T Event] func(ctx context.Context, event T) error
 
 	EventSubscriber[T Event] interface {
-		Subscribe(event Event, handler EventHandler[T])
+		Subscribe(name string, handler EventHandler[T])
 	}
 
 	EventPublisher[T Event] interface {
@@ -37,11 +37,11 @@ func NewEventDispatcher[T Event]() *EventDispatcher[T] {
 	}
 }
 
-func (h *EventDispatcher[T]) Subscribe(event Event, handler EventHandler[T]) {
+func (h *EventDispatcher[T]) Subscribe(name string, handler EventHandler[T]) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	h.handlers[event.EventName()] = append(h.handlers[event.EventName()], handler)
+	h.handlers[name] = append(h.handlers[name], handler)
 }
 
 func (h *EventDispatcher[T]) Publish(ctx context.Context, events ...T) error {

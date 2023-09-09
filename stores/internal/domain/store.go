@@ -3,8 +3,10 @@ package domain
 import (
 	"github.com/stackus/errors"
 
-	"github.com/Sraik25/event-driven-architecture/internal/ddd"
+	"github.com/Sraik25/event-driven-architecture/internal/es"
 )
+
+const StoreAggregate = "stores.Store"
 
 var (
 	ErrStoreNameIsBlank               = errors.Wrap(errors.ErrBadRequest, "the store name cannot be blank")
@@ -14,10 +16,16 @@ var (
 )
 
 type Store struct {
-	ddd.AggregateBase
+	es.Aggregate
 	Name          string
 	Location      string
 	Participating bool
+}
+
+func NewStore(id string) *Store {
+	return &Store{
+		Aggregate: es.NewAggregate(id, StoreAggregate),
+	}
 }
 
 func CreateStore(id, name, location string) (store *Store, err error) {
@@ -29,16 +37,10 @@ func CreateStore(id, name, location string) (store *Store, err error) {
 		return nil, ErrStoreLocationIsBlank
 	}
 
-	store = &Store{
-		AggregateBase: ddd.AggregateBase{
-			ID: id,
-		},
-		Name:     name,
-		Location: location,
-	}
+	store = NewStore(id)
 
-	store.AddEvent(&StoreCreated{
-		store,
+	store.AddEvent(StoreCreatedEvent, &StoreCreated{
+		Store: store,
 	})
 
 	return
@@ -51,7 +53,7 @@ func (s *Store) EnableParticipation() (err error) {
 
 	s.Participating = true
 
-	s.AddEvent(&StoreParticipationEnabled{
+	s.AddEvent(StoreParticipationEnabledEvent, &StoreParticipationEnabled{
 		Store: s,
 	})
 
@@ -65,7 +67,7 @@ func (s *Store) DisableParticipation() (err error) {
 
 	s.Participating = false
 
-	s.AddEvent(&StoreParticipationDisabled{
+	s.AddEvent(StoreParticipationDisabledEvent, &StoreParticipationDisabled{
 		Store: s,
 	})
 

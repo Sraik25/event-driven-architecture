@@ -13,6 +13,7 @@ func (m Metadata) Get(key string) any {
 func (m Metadata) Del(key string) {
 	delete(m, key)
 }
+
 func (m Metadata) configureEvent(e *event) {
 	for key, value := range m {
 		e.metadata[key] = value

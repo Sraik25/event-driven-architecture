@@ -1,19 +1,20 @@
 package domain
 
-type StoreCreated struct {
-	Store *Store
-}
+const (
+	StoreCreatedEvent               = "stores.StoreCreated"
+	StoreParticipationEnabledEvent  = "stores.StoreParticipationEnabled"
+	StoreParticipationDisabledEvent = "stores.StoreParticipationDisabled"
+)
 
-func (StoreCreated) EventName() string { return "stores.StoreCreated" }
+type StoreCreated struct {
+	Name     string
+	Location string
+}
 
 type StoreParticipationEnabled struct {
 	Store *Store
 }
 
-func (StoreParticipationEnabled) EventName() string { return "stores.StoreParticipationEnabled" }
-
 type StoreParticipationDisabled struct {
 	Store *Store
 }
-
-func (StoreParticipationDisabled) EventName() string { return "stores.StoreParticipationDisabled" }
