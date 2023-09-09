@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/Sraik25/event-driven-architecture/internal/web"
 	"google.golang.org/grpc/reflection"
 	"net/http"
 	"os"
@@ -19,6 +18,7 @@ import (
 	"github.com/Sraik25/event-driven-architecture/internal/monolith"
 	"github.com/Sraik25/event-driven-architecture/internal/rpc"
 	"github.com/Sraik25/event-driven-architecture/internal/waiter"
+	"github.com/Sraik25/event-driven-architecture/internal/web"
 	"github.com/Sraik25/event-driven-architecture/notifications"
 	"github.com/Sraik25/event-driven-architecture/ordering"
 	"github.com/Sraik25/event-driven-architecture/payments"

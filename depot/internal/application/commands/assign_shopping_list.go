@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"github.com/Sraik25/event-driven-architecture/depot/internal/domain"
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 )
 
 type AssignShoppingList struct {
@@ -11,11 +12,15 @@ type AssignShoppingList struct {
 }
 
 type AssignShoppingListHandler struct {
-	shoppingList domain.ShoppingListRepository
+	shoppingList    domain.ShoppingListRepository
+	domainPublisher ddd.EventPublisher
 }
 
-func NewAssignShoppingListHandler(shoppingList domain.ShoppingListRepository) AssignShoppingListHandler {
-	return AssignShoppingListHandler{shoppingList: shoppingList}
+func NewAssignShoppingListHandler(shoppingList domain.ShoppingListRepository, domainPublisher ddd.EventPublisher) AssignShoppingListHandler {
+	return AssignShoppingListHandler{
+		shoppingList:    shoppingList,
+		domainPublisher: domainPublisher,
+	}
 }
 
 func (h AssignShoppingListHandler) AssignShoppingList(ctx context.Context, cmd AssignShoppingList) error {
@@ -29,5 +34,14 @@ func (h AssignShoppingListHandler) AssignShoppingList(ctx context.Context, cmd A
 		return err
 	}
 
-	return h.shoppingList.Update(ctx, list)
+	if err = h.shoppingList.Update(ctx, list); err != nil {
+		return err
+	}
+
+	// publish domain events
+	if err = h.domainPublisher.Publish(ctx, list.GetEvents()...); err != nil {
+		return err
+	}
+
+	return nil
 }

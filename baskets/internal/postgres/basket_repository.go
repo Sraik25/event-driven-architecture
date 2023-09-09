@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 
 	"github.com/stackus/errors"
 
@@ -26,7 +27,9 @@ func (r BasketRepository) Find(ctx context.Context, basketID string) (*domain.Ba
 	const query = "SELECT customer_id, payment_id, items, status FROM %s WHERE id = $1 LIMIT 1"
 
 	basket := &domain.Basket{
-		ID: basketID,
+		AggregateBase: ddd.AggregateBase{
+			ID: basketID,
+		},
 	}
 	var items []byte
 	var status string

@@ -24,7 +24,9 @@ func NewProductRepository(tableName string, db *sql.DB) *ProductRepository {
 func (r ProductRepository) Find(ctx context.Context, id string) (*domain.Product, error) {
 	const query = "SELECT store_id, name, description, sku, price FROM %s WHERE id = $1 LIMIT 1"
 	product := &domain.Product{
-		AggregateBase: ddd.AggregateBase{ID: id},
+		AggregateBase: ddd.AggregateBase{
+			ID: id,
+		},
 	}
 
 	row := r.db.QueryRowContext(ctx, r.table(query), id)
