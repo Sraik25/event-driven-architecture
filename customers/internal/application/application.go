@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"github.com/Sraik25/event-driven-architecture/customers/internal/domain"
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 	"github.com/stackus/errors"
 )
 
@@ -38,14 +39,18 @@ type (
 	}
 
 	Application struct {
-		customers domain.CustomerRepository
+		customers       domain.CustomerRepository
+		domainPublisher ddd.EventPublisher
 	}
 )
 
 var _ App = (*Application)(nil)
 
-func New(customers domain.CustomerRepository) *Application {
-	return &Application{customers: customers}
+func New(customers domain.CustomerRepository, domainPublisher ddd.EventPublisher) *Application {
+	return &Application{
+		customers:       customers,
+		domainPublisher: domainPublisher,
+	}
 }
 
 func (a Application) RegisterCustomer(ctx context.Context, register RegisterCustomer) error {

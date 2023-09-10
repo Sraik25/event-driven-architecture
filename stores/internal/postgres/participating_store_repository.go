@@ -28,7 +28,7 @@ func (r ParticipatingStoreRepository) FindAll(ctx context.Context) (stores []*do
 		return nil, errors.Wrap(err, "querying participating stores")
 	}
 	defer func(rows *sql.Rows) {
-		err := rows.Close()
+		err = rows.Close()
 		if err != nil {
 			err = errors.Wrap(err, "closing participating store rows")
 		}
@@ -36,7 +36,7 @@ func (r ParticipatingStoreRepository) FindAll(ctx context.Context) (stores []*do
 
 	for rows.Next() {
 		store := &domain.Store{}
-		err := rows.Scan(&store.ID, &store.Name, &store.Location, &store.Participating)
+		err = rows.Scan(&store.ID, &store.Name, &store.Location, &store.Participating)
 		if err != nil {
 			return nil, errors.Wrap(err, "scanning participating store")
 		}

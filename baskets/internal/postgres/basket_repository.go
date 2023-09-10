@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 
 	"github.com/stackus/errors"
 
@@ -26,7 +27,9 @@ func (r BasketRepository) Find(ctx context.Context, basketID string) (*domain.Ba
 	const query = "SELECT customer_id, payment_id, items, status FROM %s WHERE id = $1 LIMIT 1"
 
 	basket := &domain.Basket{
-		ID: basketID,
+		AggregateBase: ddd.AggregateBase{
+			ID: basketID,
+		},
 	}
 	var items []byte
 	var status string
@@ -89,12 +92,12 @@ func (r BasketRepository) table(query string) string {
 
 func (r BasketRepository) statusToDomain(status string) (domain.BasketStatus, error) {
 	switch status {
-	case domain.BasketOpen.String():
-		return domain.BasketOpen, nil
-	case domain.BasketCancelled.String():
-		return domain.BasketCancelled, nil
-	case domain.BasketCheckedOut.String():
-		return domain.BasketCheckedOut, nil
+	case domain.BasketIsOpen.String():
+		return domain.BasketIsOpen, nil
+	case domain.BasketIsCanceled.String():
+		return domain.BasketIsCanceled, nil
+	case domain.BasketIsCheckedOut.String():
+		return domain.BasketIsCheckedOut, nil
 	default:
 		return domain.BasketUnknown, fmt.Errorf("unknown basket status: %s", status)
 	}

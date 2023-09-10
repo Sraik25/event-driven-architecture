@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 
 	"github.com/Sraik25/event-driven-architecture/stores/internal/domain"
 	"github.com/stackus/errors"
@@ -24,7 +25,9 @@ func (r StoreRepository) Find(ctx context.Context, storeID string) (*domain.Stor
 	const query = "SELECT name, location, participating FROM %s WHERE id = $1 LIMIT 1"
 
 	store := &domain.Store{
-		ID: storeID,
+		AggregateBase: ddd.AggregateBase{
+			ID: storeID,
+		},
 	}
 
 	err := r.db.QueryRowContext(ctx, r.table(query), storeID).Scan(&store.Name, &store.Location, &store.Participating)

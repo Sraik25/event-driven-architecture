@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 	"github.com/stackus/errors"
 
 	"github.com/Sraik25/event-driven-architecture/depot/internal/domain"
@@ -14,16 +15,19 @@ type CreateShoppingList struct {
 }
 
 type CreateShoppingListHandler struct {
-	shoppingList domain.ShoppingListRepository
-	stores       domain.StoreRepository
-	products     domain.ProductRepository
+	shoppingList    domain.ShoppingListRepository
+	stores          domain.StoreRepository
+	products        domain.ProductRepository
+	domainPublisher ddd.EventPublisher
 }
 
-func NewCreateShoppingListHandler(shoppingList domain.ShoppingListRepository, stores domain.StoreRepository, products domain.ProductRepository) CreateShoppingListHandler {
+func NewCreateShoppingListHandler(shoppingList domain.ShoppingListRepository, stores domain.StoreRepository,
+	products domain.ProductRepository, domainPublisher ddd.EventPublisher) CreateShoppingListHandler {
 	return CreateShoppingListHandler{
-		shoppingList: shoppingList,
-		stores:       stores,
-		products:     products,
+		shoppingList:    shoppingList,
+		stores:          stores,
+		products:        products,
+		domainPublisher: domainPublisher,
 	}
 }
 
@@ -47,5 +51,14 @@ func (h CreateShoppingListHandler) CreateShoppingList(ctx context.Context, cmd C
 		}
 	}
 
-	return errors.Wrap(h.shoppingList.Save(ctx, list), "scheduling shopping")
+	if err := h.shoppingList.Save(ctx, list); err != nil {
+		return errors.Wrap(err, "scheduling shopping")
+	}
+
+	// publish domain events
+	if err := h.domainPublisher.Publish(ctx, list.GetEvents()...); err != nil {
+		return err
+	}
+
+	return nil
 }

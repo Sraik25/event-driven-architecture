@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 
 	"github.com/Sraik25/event-driven-architecture/depot/internal/application/commands"
 	"github.com/Sraik25/event-driven-architecture/depot/internal/application/queries"
@@ -45,13 +46,13 @@ type (
 var _ App = (*Application)(nil)
 
 func New(shoppingLists domain.ShoppingListRepository, stores domain.StoreRepository, products domain.ProductRepository,
-	orders domain.OrderRepository) *Application {
+	domainPublisher ddd.EventPublisher) *Application {
 	return &Application{
 		appCommands: appCommands{
-			CreateShoppingListHandler:   commands.NewCreateShoppingListHandler(shoppingLists, stores, products),
-			CancelShoppingListHandler:   commands.NewCancelShoppingListHandler(shoppingLists),
-			AssignShoppingListHandler:   commands.NewAssignShoppingListHandler(shoppingLists),
-			CompleteShoppingListHandler: commands.NewCompleteShoppingListHandler(shoppingLists, orders),
+			CreateShoppingListHandler:   commands.NewCreateShoppingListHandler(shoppingLists, stores, products, domainPublisher),
+			CancelShoppingListHandler:   commands.NewCancelShoppingListHandler(shoppingLists, domainPublisher),
+			AssignShoppingListHandler:   commands.NewAssignShoppingListHandler(shoppingLists, domainPublisher),
+			CompleteShoppingListHandler: commands.NewCompleteShoppingListHandler(shoppingLists, domainPublisher),
 		},
 		appQueries: appQueries{
 			GetShoppingListHandler: queries.NewGetShoppingListHandler(shoppingLists),

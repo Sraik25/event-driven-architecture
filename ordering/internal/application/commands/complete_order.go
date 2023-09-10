@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/domain"
 )
 
@@ -11,11 +12,15 @@ type CompleteOrder struct {
 }
 
 type CompleteOrderHandler struct {
-	orders domain.OrderRepository
+	orders          domain.OrderRepository
+	domainPublisher ddd.EventPublisher
 }
 
-func NewCompleteOrderHandler(orders domain.OrderRepository) CompleteOrderHandler {
-	return CompleteOrderHandler{orders: orders}
+func NewCompleteOrderHandler(orders domain.OrderRepository, domainPublisher ddd.EventPublisher) CompleteOrderHandler {
+	return CompleteOrderHandler{
+		orders:          orders,
+		domainPublisher: domainPublisher,
+	}
 }
 
 func (h CompleteOrderHandler) CompleteOrder(ctx context.Context, cmd CompleteOrder) error {
@@ -29,5 +34,13 @@ func (h CompleteOrderHandler) CompleteOrder(ctx context.Context, cmd CompleteOrd
 		return err
 	}
 
-	return h.orders.Update(ctx, order)
+	if err = h.orders.Update(ctx, order); err != nil {
+		return err
+	}
+
+	if err = h.domainPublisher.Publish(ctx, order.GetEvents()...); err != nil {
+		return err
+	}
+
+	return nil
 }
