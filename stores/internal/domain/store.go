@@ -24,7 +24,7 @@ type Store struct {
 }
 
 var _ interface {
-	es.EventApplier
+	//es.EventApplier
 	es.Snapshotter
 } = (*Store)(nil)
 
@@ -88,7 +88,7 @@ func (s *Store) Rebrand(name string) error {
 	return nil
 }
 
-func (s Store) ApplyEvent(event ddd.Event) error {
+func (s *Store) ApplyEvent(event ddd.Event) error {
 	switch payload := event.Payload().(type) {
 	case *StoreCreated:
 		s.Name = payload.Name
@@ -108,7 +108,7 @@ func (s Store) ApplyEvent(event ddd.Event) error {
 }
 
 // ApplySnapshot implements es.Snapshotter
-func (s Store) ApplySnapshot(snapshot es.Snapshot) error {
+func (s *Store) ApplySnapshot(snapshot es.Snapshot) error {
 	switch ss := snapshot.(type) {
 	case *StoreV1:
 		s.Name = ss.Name
@@ -123,7 +123,7 @@ func (s Store) ApplySnapshot(snapshot es.Snapshot) error {
 }
 
 // ToSnapshot implements es.Snapshotter
-func (s Store) ToSnapshot() es.Snapshot {
+func (s *Store) ToSnapshot() es.Snapshot {
 	return StoreV1{
 		Name:          s.Name,
 		Location:      s.Location,
