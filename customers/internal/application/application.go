@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/Sraik25/event-driven-architecture/customers/internal/domain"
 	"github.com/Sraik25/event-driven-architecture/internal/ddd"
-	"github.com/stackus/errors"
 )
 
 type (
@@ -40,13 +39,13 @@ type (
 
 	Application struct {
 		customers       domain.CustomerRepository
-		domainPublisher ddd.EventPublisher
+		domainPublisher ddd.EventPublisher[ddd.AggregateEvent]
 	}
 )
 
 var _ App = (*Application)(nil)
 
-func New(customers domain.CustomerRepository, domainPublisher ddd.EventPublisher) *Application {
+func New(customers domain.CustomerRepository, domainPublisher ddd.EventPublisher[ddd.AggregateEvent]) *Application {
 	return &Application{
 		customers:       customers,
 		domainPublisher: domainPublisher,
@@ -58,7 +57,16 @@ func (a Application) RegisterCustomer(ctx context.Context, register RegisterCust
 	if err != nil {
 		return err
 	}
-	return a.customers.Save(ctx, customer)
+
+	if err = a.customers.Save(ctx, customer); err != nil {
+		return err
+	}
+
+	if err = a.domainPublisher.Publish(ctx, customer.Events()...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (a Application) AuthorizeCustomer(ctx context.Context, authorize AuthorizeCustomer) error {
@@ -67,8 +75,12 @@ func (a Application) AuthorizeCustomer(ctx context.Context, authorize AuthorizeC
 		return err
 	}
 
-	if !customer.Enabled {
-		return errors.Wrap(errors.ErrUnauthorized, "customer iss not authorized")
+	if err = customer.Authorize(); err != nil {
+		return err
+	}
+
+	if err = a.domainPublisher.Publish(ctx, customer.Events()...); err != nil {
+		return err
 	}
 
 	return nil
@@ -84,12 +96,19 @@ func (a Application) EnableCustomer(ctx context.Context, enable EnableCustomer) 
 		return err
 	}
 
-	err = customer.Enable()
-	if err != nil {
+	if err = customer.Enable(); err != nil {
 		return err
 	}
 
-	return a.customers.Update(ctx, customer)
+	if err = a.customers.Update(ctx, customer); err != nil {
+		return err
+	}
+
+	if err = a.domainPublisher.Publish(ctx, customer.Events()...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (a Application) DisableCustomer(ctx context.Context, disable DisableCustomer) error {
@@ -98,10 +117,17 @@ func (a Application) DisableCustomer(ctx context.Context, disable DisableCustome
 		return err
 	}
 
-	err = customer.Disable()
-	if err != nil {
+	if err = customer.Disable(); err != nil {
 		return err
 	}
 
-	return a.customers.Update(ctx, customer)
+	if err = a.customers.Update(ctx, customer); err != nil {
+		return err
+	}
+
+	if err = a.domainPublisher.Publish(ctx, customer.Events()...); err != nil {
+		return err
+	}
+
+	return nil
 }
