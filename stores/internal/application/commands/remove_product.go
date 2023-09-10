@@ -11,18 +11,25 @@ type (
 	}
 
 	RemoveProductHandler struct {
-		stores   domain.StoreRepository
 		products domain.ProductRepository
 	}
 )
 
-func NewRemoveProductHandler(stores domain.StoreRepository, products domain.ProductRepository) RemoveProductHandler {
+func NewRemoveProductHandler(products domain.ProductRepository) RemoveProductHandler {
 	return RemoveProductHandler{
-		stores:   stores,
 		products: products,
 	}
 }
 
 func (h RemoveProductHandler) RemoveProduct(ctx context.Context, cmd RemoveProduct) error {
-	return h.products.Delete(ctx, cmd.ID)
+	product, err := h.products.Load(ctx, cmd.ID)
+	if err != nil {
+		return err
+	}
+
+	if err = product.Remove(); err != nil {
+		return err
+	}
+
+	return h.products.Save(ctx, product)
 }

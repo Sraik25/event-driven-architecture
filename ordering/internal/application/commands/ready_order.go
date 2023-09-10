@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/domain"
 )
 
@@ -11,32 +10,26 @@ type ReadyOrder struct {
 }
 
 type ReadyOrderHandler struct {
-	orders          domain.OrderRepository
-	domainPublisher ddd.EventPublisher
+	orders domain.OrderRepository
 }
 
-func NewReadyOrderHandler(orders domain.OrderRepository, domainPublisher ddd.EventPublisher) ReadyOrderHandler {
+func NewReadyOrderHandler(orders domain.OrderRepository) ReadyOrderHandler {
 	return ReadyOrderHandler{
-		orders:          orders,
-		domainPublisher: domainPublisher,
+		orders: orders,
 	}
 }
 
 func (h ReadyOrderHandler) ReadyOrder(ctx context.Context, cmd ReadyOrder) error {
-	order, err := h.orders.Find(ctx, cmd.ID)
+	order, err := h.orders.Load(ctx, cmd.ID)
 	if err != nil {
 		return err
 	}
 
 	if err = order.Ready(); err != nil {
-		return err
+		return nil
 	}
 
-	if err = h.orders.Update(ctx, order); err != nil {
-		return err
-	}
-
-	if err = h.domainPublisher.Publish(ctx, order.GetEvents()...); err != nil {
+	if err = h.orders.Save(ctx, order); err != nil {
 		return err
 	}
 

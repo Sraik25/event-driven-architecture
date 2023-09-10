@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"github.com/Sraik25/event-driven-architecture/internal/ddd"
 	"github.com/stackus/errors"
 
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/domain"
@@ -12,56 +11,57 @@ type CreateOrder struct {
 	ID         string
 	CustomerID string
 	PaymentID  string
-	Items      []*domain.Item
+	Items      []domain.Item
 }
 
 type CreateOrderHandler struct {
-	orders          domain.OrderRepository
-	customers       domain.CustomerRepository
-	payments        domain.PaymentRepository
-	shopping        domain.ShoppingRepository
-	domainPublisher ddd.EventPublisher
+	orders    domain.OrderRepository
+	customers domain.CustomerRepository
+	payments  domain.PaymentRepository
+	shopping  domain.ShoppingRepository
 }
 
 func NewCreateOrderHandler(orders domain.OrderRepository, customers domain.CustomerRepository,
-	payments domain.PaymentRepository, shopping domain.ShoppingRepository, domainPublisher ddd.EventPublisher) CreateOrderHandler {
+	payments domain.PaymentRepository, shopping domain.ShoppingRepository,
+) CreateOrderHandler {
 	return CreateOrderHandler{
-		orders:          orders,
-		customers:       customers,
-		payments:        payments,
-		shopping:        shopping,
-		domainPublisher: domainPublisher,
+		orders:    orders,
+		customers: customers,
+		payments:  payments,
+		shopping:  shopping,
 	}
 }
 
 func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) error {
-	order, err := domain.CreateOrder(cmd.ID, cmd.CustomerID, cmd.PaymentID, cmd.Items)
+	order, err := h.orders.Load(ctx, cmd.ID)
 	if err != nil {
-		return errors.Wrap(err, "create order command")
+		return err
 	}
 
 	// authorizeCustomer
-	if err = h.customers.Authorize(ctx, order.CustomerID); err != nil {
-		return errors.Wrap(err, "order customers authorization")
+	if err = h.customers.Authorize(ctx, cmd.CustomerID); err != nil {
+		return errors.Wrap(err, "order customer authorization")
 	}
 
 	// validatePayment
-	if err = h.payments.Confirm(ctx, order.PaymentID); err != nil {
+	if err = h.payments.Confirm(ctx, cmd.PaymentID); err != nil {
 		return errors.Wrap(err, "order payment confirmation")
 	}
 
 	// scheduleShopping
-	if order.ShoppingID, err = h.shopping.Create(ctx, order); err != nil {
+	var shoppingID string
+	if shoppingID, err = h.shopping.Create(ctx, cmd.ID, cmd.Items); err != nil {
 		return errors.Wrap(err, "order shopping scheduling")
 	}
 
-	if err = h.orders.Save(ctx, order); err != nil {
-		errors.Wrap(err, "Create order command")
+	err = order.CreateOrder(cmd.ID, cmd.CustomerID, cmd.PaymentID, shoppingID, cmd.Items)
+	if err != nil {
+		return errors.Wrap(err, "create order command")
 	}
 
-	// publish domain events
-	if err = h.domainPublisher.Publish(ctx, order.GetEvents()...); err != nil {
-		return err
+	// orderCreation
+	if err = h.orders.Save(ctx, order); err != nil {
+		return errors.Wrap(err, "order creation")
 	}
 
 	return nil

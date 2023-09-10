@@ -3,26 +3,40 @@ package ordering
 import (
 	"context"
 	"github.com/Sraik25/event-driven-architecture/internal/ddd"
+	"github.com/Sraik25/event-driven-architecture/internal/es"
 	"github.com/Sraik25/event-driven-architecture/internal/monolith"
+	pg "github.com/Sraik25/event-driven-architecture/internal/postgres"
+	"github.com/Sraik25/event-driven-architecture/internal/registry"
+	"github.com/Sraik25/event-driven-architecture/internal/registry/serdes"
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/application"
+	"github.com/Sraik25/event-driven-architecture/ordering/internal/domain"
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/grpc"
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/handlers"
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/logging"
-	"github.com/Sraik25/event-driven-architecture/ordering/internal/postgres"
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/rest"
 )
 
 type Module struct {
 }
 
-func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
-	domainDispatcher := ddd.NewEventDispatcher()
-	orders := postgres.NewOrderRepository("ordering.orders", mono.DB())
+func (Module) Startup(ctx context.Context, mono monolith.Monolith) (err error) {
+	// setup Driven adapters
+	reg := registry.New()
+	err = registrations(reg)
+	if err != nil {
+		return err
+	}
+	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
+	aggregateStore := es.AggregateStoreWithMiddleware(
+		pg.NewEventStore("ordering.events", mono.DB(), reg),
+		es.NewEventPublisher(domainDispatcher),
+		pg.NewSnapshotStore("ordering.snapshots", mono.DB(), reg),
+	)
+	orders := es.NewAggregateRepository[*domain.Order](domain.OrderAggregate, reg, aggregateStore)
 	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
 	if err != nil {
 		return err
 	}
-
 	customers := grpc.NewCustomerRepository(conn)
 	payments := grpc.NewPaymentRepository(conn)
 	invoices := grpc.NewInvoiceRepository(conn)
@@ -31,34 +45,62 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
 
 	// setup application
 	var app application.App
-	app = application.New(orders, customers, payments, shopping, domainDispatcher)
-	app = logging.NewApplication(app, mono.Logger())
-
+	app = application.New(orders, customers, payments, shopping)
+	app = logging.LogApplicationAccess(app, mono.Logger())
 	// setup application handlers
-	notificationHandlers := logging.LogDomainEventHandlerAccess(
+	notificationHandlers := logging.LogEventHandlerAccess[ddd.AggregateEvent](
 		application.NewNotificationHandlers(notifications),
-		mono.Logger(),
+		"Notification", mono.Logger(),
 	)
-	invoiceHandlers := logging.LogDomainEventHandlerAccess(
+	invoiceHandlers := logging.LogEventHandlerAccess[ddd.AggregateEvent](
 		application.NewInvoiceHandlers(invoices),
-		mono.Logger(),
+		"Invoice", mono.Logger(),
 	)
 
 	// setup Driver adapters
-	if err = grpc.RegisterServer(app, mono.RPC()); err != nil {
+	if err := grpc.RegisterServer(app, mono.RPC()); err != nil {
 		return err
 	}
-
-	if err = rest.RegisterGateway(ctx, mono.Mux(), mono.Config().Rpc.Address()); err != nil {
+	if err := rest.RegisterGateway(ctx, mono.Mux(), mono.Config().Rpc.Address()); err != nil {
 		return err
 	}
-
-	if err = rest.RegisterSwagger(mono.Mux()); err != nil {
+	if err := rest.RegisterSwagger(mono.Mux()); err != nil {
 		return err
 	}
-
 	handlers.RegisterNotificationHandlers(notificationHandlers, domainDispatcher)
 	handlers.RegisterInvoiceHandlers(invoiceHandlers, domainDispatcher)
+
+	return nil
+}
+
+func registrations(reg registry.Registry) error {
+	serde := serdes.NewJsonSerde(reg)
+
+	// Order
+	if err := serde.Register(domain.Order{}, func(v any) error {
+		order := v.(*domain.Order)
+		order.Aggregate = es.NewAggregate("", domain.OrderAggregate)
+		return nil
+	}); err != nil {
+		return err
+	}
+	// order events
+	if err := serde.Register(domain.OrderCreated{}); err != nil {
+		return err
+	}
+	if err := serde.Register(domain.OrderCanceled{}); err != nil {
+		return err
+	}
+	if err := serde.Register(domain.OrderReadied{}); err != nil {
+		return err
+	}
+	if err := serde.Register(domain.OrderCompleted{}); err != nil {
+		return err
+	}
+	// order snapshots
+	if err := serde.RegisterKey(domain.OrderV1{}.SnapshotName(), domain.OrderV1{}); err != nil {
+		return err
+	}
 
 	return nil
 }
