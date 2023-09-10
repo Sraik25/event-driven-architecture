@@ -5,6 +5,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/Sraik25/event-driven-architecture/ordering/internal/domain"
+	"github.com/Sraik25/event-driven-architecture/payments/paymentspb"
 )
 
 type PaymentRepository struct {
